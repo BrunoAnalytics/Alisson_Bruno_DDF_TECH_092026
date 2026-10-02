@@ -1,4 +1,12 @@
 data/bronze/*.csv
 .venv/
+.venv310/
 __pycache__/
 .ipynb_checkpoints/
+.env
+.env.*
+!.env.example
+data/**/*.duckdb
+data/**/*.wal
+*.db
+*.sqlite
