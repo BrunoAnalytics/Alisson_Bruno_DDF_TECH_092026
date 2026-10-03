@@ -526,15 +526,17 @@ Esse modelo deve ser documentado e aplicado ao projeto para reduzir ambiguidade 
 
 ## Item 5 — GenAI e LLMs
 
-Foi escolhida a rota de avaliações sintéticas, sem baixar nem substituir as tabelas da Dadosfera. Como os antigos CSVs bônus de avaliações tinham `order_id`/`customer_id` incompatíveis com a geração atual, [src/prepare_aligned_synthetic_reviews.py](src/prepare_aligned_synthetic_reviews.py) cria uma fonte Silver sintética e alinhada com 10.000 avaliações e chaves verificadas. O arquivo declara que a localização é ilustrativa e não é dado Olist/IBGE.
+O Item 5 está separado em duas demonstrações, sem substituir nem reenviar tabelas à Dadosfera.
 
-O processador [src/process_reviews_with_llm.py](src/process_reviews_with_llm.py) valida a saída JSON e limita cada execução a cinco avaliações. O dry-run foi testado e não chama a API. A chamada real exige `OPENAI_API_KEY`, `--execute` e `--confirm-paid-api`; não foi executada, pois depende de chave e confirmação de preço/saldo. Não coloque a chave no notebook, README ou Git.
+**Classificação de reviews:** como os CSVs Bronze antigos de avaliações tinham `order_id`/`customer_id` incompatíveis com os pedidos atuais, [src/prepare_aligned_synthetic_reviews.py](src/prepare_aligned_synthetic_reviews.py) cria 10.000 reviews sintéticas alinhadas para as etapas locais. O processador [src/process_reviews_with_llm.py](src/process_reviews_with_llm.py) limita cada execução a cinco avaliações e exige `OPENAI_API_KEY`, `--execute` e `--confirm-paid-api`. O dry-run confirmou que nenhuma chamada foi feita; ele valida a barreira de execução, não a resposta real do modelo. A chamada paga não foi executada. Não coloque a chave no notebook, README ou Git.
+
+**Features de produto:** [data/silver/tb_products_enriched_sample.csv](data/silver/tb_products_enriched_sample.csv) contém cinco produtos demonstrativos com texto e features em JSON. A amostra foi montada com assistência do GitHub Copilot para demonstrar o contrato de extração, está marcada como `synthetic_demo_text` e usa IDs `demo-product-*`; os textos foram criados para a demonstração, não extraídos dos produtos Bronze, cujos títulos e descrições atuais são texto Faker sem conteúdo confiável para inferir atributos. A tabela fica separada dos fatos e da dimensão transacional. O builder a publica no DuckDB como `tb_products_enriched_sample`, e o Streamlit a exibe num bloco separado, sem afetar as métricas de vendas. `sentiment` foi omitido porque é uma feature de reviews, não um atributo intrínseco do produto. Essa demo valida o contrato tabular/JSON e sua leitura local; não deve ser descrita como extração real dos 5.000 produtos Bronze nem como execução offline. Para demonstrar extração desses produtos, será necessário substituir a amostra por descrições semanticamente utilizáveis e rastrear a origem do texto.
 
 Para preparar as avaliações alinhadas, execute `python src/prepare_aligned_synthetic_reviews.py`. Para confirmar a execução sem custo, use `python src/process_reviews_with_llm.py --limit 5`; a chamada real não deve ser feita até confirmar explicitamente o custo da API.
 
 ## Item 6 — Modelagem de Dados
 
-O script [src/build_star_schema.py](src/build_star_schema.py) materializa localmente em DuckDB as dimensões `dim_tempo`, `dim_cliente`, `dim_geolocalizacao`, `dim_produto` e `dim_status_pedido`; e os fatos `fato_pedidos`, `fato_itens_pedido` e `fato_avaliacoes`. Também cria as views `vw_analitico_pedidos`, `vw_analitico_pedidos_itens` e `vw_analitico_avaliacoes`.
+O script [src/build_star_schema.py](src/build_star_schema.py) materializa localmente em DuckDB as dimensões `dim_tempo`, `dim_cliente`, `dim_geolocalizacao`, `dim_produto` e `dim_status_pedido`; os fatos `fato_pedidos`, `fato_itens_pedido` e `fato_avaliacoes`; e as views `vw_analitico_pedidos`, `vw_analitico_pedidos_itens` e `vw_analitico_avaliacoes`. A PoC de produtos é uma tabela separada `tb_products_enriched_sample`, não ligada às linhas de pedido nem incorporada às views transacionais.
 
 A validação confirmou 100.000 pedidos, 200.000 itens e 10.000 avaliações, sem multiplicação de linhas nas views. O banco local é `data/gold/ecommerce_star.duckdb` e pode ser reproduzido executando o script após gerar os dados Silver. A geografia disponível é sintética, sem latitude/longitude; não deve ser usada como mapa real ou cálculo de rotas.
 
@@ -542,7 +544,7 @@ Com os arquivos Silver disponíveis, execute `python src/build_star_schema.py` p
 
 ## Item 7 — Análise de Dados
 
-O Streamlit local contém cinco gráficos: pedidos por status, pedidos por mês, evolução da receita, receita por categoria e frete médio por categoria; além de KPIs e tabelas. Quando o DuckDB Gold existe, o app consulta as views analíticas locais; caso contrário, usa os CSVs Bronze.
+O Streamlit local contém cinco gráficos: pedidos por status, pedidos por mês, evolução da receita, receita por categoria e frete médio por categoria; além de KPIs e tabelas. Quando o DuckDB Gold existe, o app consulta as views analíticas locais e, se disponível, exibe a PoC sintética `tb_products_enriched_sample` numa seção separada. Sem o DuckDB, usa os CSVs Bronze e lê a amostra Silver opcionalmente. A PoC não participa das métricas de venda.
 
 Isso atende localmente ao mínimo de cinco gráficos, mas não conclui a criação da coleção na Dadosfera, a integração do Metabase ou a publicação do Power BI. Alertas de queda diária, mapa com coordenadas IBGE e dashboard Power BI permanecem bônus pendentes.
 
@@ -685,6 +687,7 @@ O projeto foi organizado para respeitar a regra do case: qualquer etapa que depe
 - [x] Relatório pandas local e log; a execução de 01/10 tem `ALERTA` por chaves órfãs nos arquivos bônus Bronze antigos. As tabelas Silver sintéticas alinhadas passam as verificações de relacionamento.
 - [x] Star Schema DuckDB local implementado com fatos de pedidos, itens e avaliações e views analíticas; o README registra a validação de cardinalidade da execução anterior.
 - [x] Data App Streamlit local com cinco gráficos; AppTest foi registrado como aprovado anteriormente. O app lê DuckDB/CSV local, não Dadosfera.
+- [x] PoC de atributos de produtos em `data/silver/tb_products_enriched_sample.csv`: cinco registros de demonstração sintéticos, JSON validado, tabela separada no DuckDB e seção renderizada no Streamlit; não são produtos extraídos do Bronze nem entram nas métricas transacionais.
 - [x] Processador de avaliações preparado, limitado a cinco registros e com dry-run; nenhuma chamada paga foi feita.
 
 ### Relatado, mas evidência externa não arquivada
