@@ -309,6 +309,52 @@ def build_model() -> None:
             JOIN dim_geolocalizacao AS geography ON geography.geography_key = customer.geography_key
             """
         )
+        connection.execute(
+            """
+            CREATE OR REPLACE VIEW vw_analitico_ecommerce AS
+            WITH review_summary AS (
+                SELECT
+                    order_key,
+                    COUNT(*)::INTEGER AS review_count,
+                    AVG(review_score)::DECIMAL(3, 2) AS average_review_score,
+                    STRING_AGG(review_text, ' | ' ORDER BY review_key) AS review_texts
+                FROM fato_avaliacoes
+                GROUP BY order_key
+            )
+            SELECT
+                item.order_key AS order_id,
+                item.item_key AS order_item_id,
+                purchase_calendar.calendar_date::TIMESTAMP AS purchase_date,
+                delivery_calendar.calendar_date::TIMESTAMP AS delivery_date,
+                order_fact.status_key AS order_status,
+                status.status_description AS order_status_description,
+                customer.customer_key AS customer_id,
+                geography.customer_state,
+                geography.customer_city,
+                geography.source_type AS geography_source,
+                product.product_key AS product_id,
+                product.category_name,
+                product.product_title,
+                item.item_price,
+                item.freight_value,
+                order_fact.item_count AS order_item_count,
+                order_fact.items_revenue,
+                order_fact.freight_total,
+                order_fact.items_revenue + order_fact.freight_total AS order_total,
+                COALESCE(review_summary.review_count, 0) AS review_count,
+                review_summary.average_review_score,
+                review_summary.review_texts
+            FROM fato_itens_pedido AS item
+            JOIN fato_pedidos AS order_fact ON order_fact.order_key = item.order_key
+            JOIN dim_tempo AS purchase_calendar ON purchase_calendar.date_key = item.purchase_date_key
+            LEFT JOIN dim_tempo AS delivery_calendar ON delivery_calendar.date_key = order_fact.delivery_date_key
+            JOIN dim_status_pedido AS status ON status.status_key = order_fact.status_key
+            JOIN dim_cliente AS customer ON customer.customer_key = item.customer_key
+            JOIN dim_geolocalizacao AS geography ON geography.geography_key = customer.geography_key
+            JOIN dim_produto AS product ON product.product_key = item.product_key
+            LEFT JOIN review_summary ON review_summary.order_key = item.order_key
+            """
+        )
 
         expected_counts = {
             "fato_pedidos": len(orders),
@@ -319,6 +365,7 @@ def build_model() -> None:
             "vw_analitico_pedidos": len(orders),
             "vw_analitico_pedidos_itens": len(items),
             "vw_analitico_avaliacoes": len(reviews),
+            "vw_analitico_ecommerce": len(items),
         }
         for relation, expected_count in expected_counts.items():
             actual_count = connection.execute(f"SELECT COUNT(*) FROM {relation}").fetchone()[0]

@@ -10,3 +10,4 @@ data/**/*.duckdb
 data/**/*.wal
 *.db
 *.sqlite
+!data/gold/ecommerce_star.duckdb

@@ -29,6 +29,9 @@ ALIGNED_SYNTHETIC_FILES = {
     "customers_aligned": SILVER / "tb_customers_aligned_synthetic.csv",
     "reviews_aligned": SILVER / "tb_reviews_aligned_synthetic.csv",
 }
+OLIST_REVIEW_FILES = {
+    "reviews_olist_sample": SILVER / "tb_reviews_aligned_real.csv",
+}
 VALID_STATUSES = {"delivered", "shipped", "processing", "canceled"}
 
 
@@ -117,6 +120,11 @@ def load_tables() -> tuple[dict[str, pd.DataFrame], dict[str, str]]:
             tables[name] = pd.read_csv(path)
         else:
             optional_missing[name] = f"Extensão sintética ainda não gerada: {path.name}"
+    for name, path in OLIST_REVIEW_FILES.items():
+        if path.exists():
+            tables[name] = pd.read_csv(path)
+        else:
+            optional_missing[name] = f"Amostra Olist anotada ausente: {path.name}"
     return tables, optional_missing
 
 
@@ -261,6 +269,41 @@ def run_quality_checks(tables: dict[str, pd.DataFrame]) -> tuple[list[dict], dic
         add_check(
             checks, failed_rows, "reviews_aligned", "review_text_not_empty",
             aligned_reviews["review_text"].fillna("").str.strip().eq(""),
+            "review_text preenchido.",
+        )
+
+    if "reviews_olist_sample" in tables:
+        olist_reviews = tables["reviews_olist_sample"]
+        add_check(
+            checks, failed_rows, "reviews_olist_sample", "review_id_unique",
+            olist_reviews["review_id"].duplicated(keep=False), "review_id único.",
+        )
+        score = pd.to_numeric(olist_reviews["review_score"], errors="coerce")
+        add_check(
+            checks, failed_rows, "reviews_olist_sample", "review_score_between_1_and_5",
+            score.isna() | ~score.between(1, 5), "review_score entre 1 e 5.",
+        )
+        add_check(
+            checks, failed_rows, "reviews_olist_sample", "sentiment_domain",
+            ~olist_reviews["sentimento"].fillna("").isin({"Positivo", "Neutro", "Negativo"}),
+            "sentimento em Positivo, Neutro ou Negativo.",
+        )
+        add_check(
+            checks, failed_rows, "reviews_olist_sample", "problem_category_domain",
+            ~olist_reviews["categoria_problema"].fillna("").isin(
+                {"Outro", "Logística", "Produto", "Atendimento", "Pagamento"}
+            ),
+            "categoria_problema em um dos valores permitidos.",
+        )
+        for column in ("atraso_entrega", "produto_danificado"):
+            add_check(
+                checks, failed_rows, "reviews_olist_sample", f"{column}_domain",
+                ~olist_reviews[column].fillna("").isin({"Sim", "Não"}),
+                f"{column} deve ser Sim ou Não.",
+            )
+        add_check(
+            checks, failed_rows, "reviews_olist_sample", "review_text_not_empty",
+            olist_reviews["review_text"].fillna("").str.strip().eq(""),
             "review_text preenchido.",
         )
 

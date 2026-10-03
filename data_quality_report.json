@@ -1,0 +1,147 @@
+{
+  "data_inicio": "2026-10-02T13:45:31.040889+00:00",
+  "data_fim": "2026-10-02T13:45:38.293662+00:00",
+  "status": "SUCESSO",
+  "linhas_afetadas": 315000,
+  "contagens": {
+    "orders": 100000,
+    "items": 200000,
+    "products": 5000,
+    "reviews": 10000
+  },
+  "checks": [
+    {
+      "table": "orders",
+      "expectation": "order_id_not_null",
+      "success": true
+    },
+    {
+      "table": "orders",
+      "expectation": "order_id_unique",
+      "success": true
+    },
+    {
+      "table": "orders",
+      "expectation": "customer_id_not_null",
+      "success": true
+    },
+    {
+      "table": "orders",
+      "expectation": "purchase_timestamp_not_null",
+      "success": true
+    },
+    {
+      "table": "orders",
+      "expectation": "purchase_timestamp_valid_datetime",
+      "success": true
+    },
+    {
+      "table": "orders",
+      "expectation": "order_status_domain",
+      "success": true
+    },
+    {
+      "table": "items",
+      "expectation": "order_id_not_null",
+      "success": true
+    },
+    {
+      "table": "items",
+      "expectation": "product_id_not_null",
+      "success": true
+    },
+    {
+      "table": "items",
+      "expectation": "price_valid_numeric",
+      "success": true
+    },
+    {
+      "table": "items",
+      "expectation": "price_nonnegative",
+      "success": true
+    },
+    {
+      "table": "items",
+      "expectation": "freight_valid_numeric",
+      "success": true
+    },
+    {
+      "table": "items",
+      "expectation": "freight_nonnegative",
+      "success": true
+    },
+    {
+      "table": "products",
+      "expectation": "product_id_not_null",
+      "success": true
+    },
+    {
+      "table": "products",
+      "expectation": "product_id_unique",
+      "success": true
+    },
+    {
+      "table": "products",
+      "expectation": "title_not_null",
+      "success": true
+    },
+    {
+      "table": "products",
+      "expectation": "title_not_empty",
+      "success": true
+    },
+    {
+      "table": "products",
+      "expectation": "description_not_null",
+      "success": true
+    },
+    {
+      "table": "products",
+      "expectation": "description_not_empty",
+      "success": true
+    },
+    {
+      "table": "reviews",
+      "expectation": "review_id_unique",
+      "success": true
+    },
+    {
+      "table": "reviews",
+      "expectation": "review_score_valid_numeric",
+      "success": true
+    },
+    {
+      "table": "reviews",
+      "expectation": "review_score_range",
+      "success": true
+    },
+    {
+      "table": "reviews",
+      "expectation": "review_text_not_null",
+      "success": true
+    },
+    {
+      "table": "reviews",
+      "expectation": "review_text_not_empty",
+      "success": true
+    },
+    {
+      "table": "items",
+      "expectation": "order_id_referential_integrity",
+      "success": true,
+      "failed_rows": 0
+    },
+    {
+      "table": "items",
+      "expectation": "product_id_referential_integrity",
+      "success": true,
+      "failed_rows": 0
+    },
+    {
+      "table": "reviews",
+      "expectation": "order_id_referential_integrity",
+      "success": true,
+      "failed_rows": 0
+    }
+  ]
+}
