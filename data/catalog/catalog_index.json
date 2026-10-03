@@ -1,0 +1,318 @@
+{
+  "project": "Dadosfera E-commerce Case",
+  "bronze_tables": [
+    {
+      "name": "tb_customers.csv",
+      "rows": 100000,
+      "columns": [
+        "customer_id",
+        "customer_state",
+        "customer_city",
+        "customer_segment",
+        "customer_channel"
+      ],
+      "column_metadata": [
+        {
+          "name": "customer_id",
+          "type": "str",
+          "description": "Identificador sintético do cliente associado ao pedido."
+        },
+        {
+          "name": "customer_state",
+          "type": "str",
+          "description": "Sigla de estado sintética do cliente."
+        },
+        {
+          "name": "customer_city",
+          "type": "str",
+          "description": "Cidade sintética do cliente."
+        },
+        {
+          "name": "customer_segment",
+          "type": "str",
+          "description": "Segmento sintético atribuído ao cliente."
+        },
+        {
+          "name": "customer_channel",
+          "type": "str",
+          "description": "Canal sintético de compra do cliente."
+        }
+      ],
+      "description": "Perfis sintéticos de clientes, região e canal de compra.",
+      "tags": [
+        "ecommerce",
+        "customers",
+        "synthetic"
+      ],
+      "zone": "bronze",
+      "classification": "synthetic_non_personal",
+      "owner": "case-ecommerce",
+      "quality_rules": [
+        "customer_id único",
+        "relacionamento com tb_orders a validar"
+      ]
+    },
+    {
+      "name": "tb_order_items.csv",
+      "rows": 200000,
+      "columns": [
+        "order_id",
+        "order_item_id",
+        "product_id",
+        "price",
+        "freight_value"
+      ],
+      "column_metadata": [
+        {
+          "name": "order_id",
+          "type": "str",
+          "description": "Identificador do pedido."
+        },
+        {
+          "name": "order_item_id",
+          "type": "int64",
+          "description": "Sequência do item dentro do pedido."
+        },
+        {
+          "name": "product_id",
+          "type": "str",
+          "description": "Identificador do produto associado ao item."
+        },
+        {
+          "name": "price",
+          "type": "float64",
+          "description": "Preço do item, em reais no cenário sintético."
+        },
+        {
+          "name": "freight_value",
+          "type": "float64",
+          "description": "Valor de frete do item, em reais no cenário sintético."
+        }
+      ],
+      "description": "Itens sintéticos associados aos pedidos; um registro por linha de pedido.",
+      "tags": [
+        "ecommerce",
+        "order-items",
+        "transactional",
+        "synthetic"
+      ],
+      "zone": "bronze",
+      "classification": "synthetic_non_personal",
+      "owner": "case-ecommerce",
+      "quality_rules": [
+        "order_id existente em tb_orders",
+        "product_id existente em tb_products_unstructured",
+        "price e freight_value não negativos"
+      ]
+    },
+    {
+      "name": "tb_orders.csv",
+      "rows": 100000,
+      "columns": [
+        "order_id",
+        "customer_id",
+        "order_status",
+        "order_purchase_timestamp",
+        "order_delivered_customer_date"
+      ],
+      "column_metadata": [
+        {
+          "name": "order_id",
+          "type": "str",
+          "description": "Identificador do pedido."
+        },
+        {
+          "name": "customer_id",
+          "type": "str",
+          "description": "Identificador sintético do cliente associado ao pedido."
+        },
+        {
+          "name": "order_status",
+          "type": "str",
+          "description": "Status operacional do pedido."
+        },
+        {
+          "name": "order_purchase_timestamp",
+          "type": "str",
+          "description": "Data e hora em que o pedido foi realizado."
+        },
+        {
+          "name": "order_delivered_customer_date",
+          "type": "str",
+          "description": "Data e hora da entrega; pode ficar vazia para pedidos não entregues."
+        }
+      ],
+      "description": "Pedidos sintéticos do e-commerce; um registro por pedido.",
+      "tags": [
+        "ecommerce",
+        "orders",
+        "transactional",
+        "synthetic"
+      ],
+      "zone": "bronze",
+      "classification": "synthetic_non_personal",
+      "owner": "case-ecommerce",
+      "quality_rules": [
+        "order_id único",
+        "customer_id preenchido",
+        "order_status no domínio esperado"
+      ]
+    },
+    {
+      "name": "tb_payments.csv",
+      "rows": 100000,
+      "columns": [
+        "payment_id",
+        "order_id",
+        "payment_type",
+        "payment_value",
+        "payment_status"
+      ],
+      "column_metadata": [
+        {
+          "name": "payment_id",
+          "type": "str",
+          "description": "Identificador do pagamento."
+        },
+        {
+          "name": "order_id",
+          "type": "str",
+          "description": "Identificador do pedido."
+        },
+        {
+          "name": "payment_type",
+          "type": "str",
+          "description": "Tipo de pagamento sintético."
+        },
+        {
+          "name": "payment_value",
+          "type": "float64",
+          "description": "Valor sintético associado ao pagamento."
+        },
+        {
+          "name": "payment_status",
+          "type": "str",
+          "description": "Status sintético do pagamento."
+        }
+      ],
+      "description": "Pagamentos sintéticos associados a pedidos.",
+      "tags": [
+        "ecommerce",
+        "payments",
+        "synthetic"
+      ],
+      "zone": "bronze",
+      "classification": "synthetic_non_personal",
+      "owner": "case-ecommerce",
+      "quality_rules": [
+        "payment_id único",
+        "order_id existente em tb_orders a validar",
+        "payment_value não negativo"
+      ]
+    },
+    {
+      "name": "tb_products_unstructured.csv",
+      "rows": 5000,
+      "columns": [
+        "product_id",
+        "product_category_name_raw",
+        "title_raw",
+        "description_raw"
+      ],
+      "column_metadata": [
+        {
+          "name": "product_id",
+          "type": "str",
+          "description": "Identificador do produto associado ao item."
+        },
+        {
+          "name": "product_category_name_raw",
+          "type": "str",
+          "description": "Categoria original do produto, mantida como texto bruto."
+        },
+        {
+          "name": "title_raw",
+          "type": "str",
+          "description": "Título textual original do produto."
+        },
+        {
+          "name": "description_raw",
+          "type": "str",
+          "description": "Descrição textual original do produto."
+        }
+      ],
+      "description": "Produtos sintéticos com categoria, título e descrição textual livre.",
+      "tags": [
+        "ecommerce",
+        "products",
+        "text",
+        "synthetic"
+      ],
+      "zone": "bronze",
+      "classification": "synthetic_non_personal",
+      "owner": "case-ecommerce",
+      "quality_rules": [
+        "product_id único",
+        "título e descrição não vazios"
+      ]
+    },
+    {
+      "name": "tb_reviews.csv",
+      "rows": 39727,
+      "columns": [
+        "order_id",
+        "customer_id",
+        "review_score",
+        "review_text",
+        "review_created_at"
+      ],
+      "column_metadata": [
+        {
+          "name": "order_id",
+          "type": "str",
+          "description": "Identificador do pedido."
+        },
+        {
+          "name": "customer_id",
+          "type": "str",
+          "description": "Identificador sintético do cliente associado ao pedido."
+        },
+        {
+          "name": "review_score",
+          "type": "int64",
+          "description": "Nota sintética da avaliação, de 1 a 5."
+        },
+        {
+          "name": "review_text",
+          "type": "str",
+          "description": "Comentário textual sintético da avaliação."
+        },
+        {
+          "name": "review_created_at",
+          "type": "str",
+          "description": "Data e hora sintéticas de criação da avaliação."
+        }
+      ],
+      "description": "Avaliações sintéticas com nota e comentário textual.",
+      "tags": [
+        "ecommerce",
+        "reviews",
+        "text",
+        "synthetic"
+      ],
+      "zone": "bronze",
+      "classification": "synthetic_non_personal",
+      "owner": "case-ecommerce",
+      "quality_rules": [
+        "review_score entre 1 e 5",
+        "order_id existente em tb_orders a validar",
+        "review_text não vazio"
+      ]
+    }
+  ],
+  "zones": {
+    "bronze": "dados brutos ingeridos",
+    "silver": "dados tratados e validados",
+    "gold": "dados prontos para consumo analítico"
+  }
+}

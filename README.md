@@ -349,7 +349,7 @@ Propor uma base de dados que faça sentido para o cenário do cliente e que poss
 
 ### Base sugerida
 
-A base escolhida é um conjunto sintético de e-commerce transacional, permitido pelo enunciado desde que represente o domínio e que o código de geração seja apresentado. Ela cobre pedidos, itens de pedido e produtos com descrições textuais. Não foram usados os arquivos reais do dataset Olist: o schema e os registros foram criados com Python/Faker para simular esse domínio.
+A base operacional de pedidos, itens, clientes e produtos é sintética, gerada com Python/Faker para representar o domínio de e-commerce. Ela não é o dataset transacional Olist. A única fonte Olist usada é uma amostra separada de 500 reviews anotadas no Colab para o Item 5; essas reviews não são juntadas à operação sintética porque os IDs não correspondem.
 
 O conjunto principal contém 305.000 registros: 100.000 pedidos, 200.000 itens e 5.000 produtos. A camada Silver acrescenta 10.000 avaliações sintéticas alinhadas a pedidos atuais e uma dimensão de clientes/localizações ilustrativas. A geração é reproduzível pelo [notebook](notebooks/01_data_generation_and_prep.ipynb) e pelo [script Python com tabelas adicionais](src/generate_case_data.py). No gerador atual, cada pedido recebe um `customer_id` próprio; portanto, a base não representa recorrência real de clientes.
 
@@ -526,9 +526,13 @@ Esse modelo deve ser documentado e aplicado ao projeto para reduzir ambiguidade 
 
 ## Item 5 — GenAI e LLMs
 
-O Item 5 está separado em duas demonstrações, sem substituir nem reenviar tabelas à Dadosfera.
+O Item 5 mantém separados dados sintéticos alinhados, a amostra real anotada e a PoC de produtos.
 
-**Classificação de reviews:** como os CSVs Bronze antigos de avaliações tinham `order_id`/`customer_id` incompatíveis com os pedidos atuais, [src/prepare_aligned_synthetic_reviews.py](src/prepare_aligned_synthetic_reviews.py) cria 10.000 reviews sintéticas alinhadas para as etapas locais. O processador [src/process_reviews_with_llm.py](src/process_reviews_with_llm.py) limita cada execução a cinco avaliações e exige `OPENAI_API_KEY`, `--execute` e `--confirm-paid-api`. O dry-run confirmou que nenhuma chamada foi feita; ele valida a barreira de execução, não a resposta real do modelo. A chamada paga não foi executada. Não coloque a chave no notebook, README ou Git.
+**Reviews sintéticas alinhadas:** como os CSVs Bronze antigos de avaliações tinham `order_id`/`customer_id` incompatíveis com os pedidos atuais, [src/prepare_aligned_synthetic_reviews.py](src/prepare_aligned_synthetic_reviews.py) cria 10.000 reviews sintéticas alinhadas para o Star Schema local. O processador [src/process_reviews_with_llm.py](src/process_reviews_with_llm.py) limita cada execução a cinco avaliações e exige `OPENAI_API_KEY`, `--execute` e `--confirm-paid-api`. O dry-run confirmou que nenhuma chamada OpenAI foi feita; ele valida a barreira de execução, não a resposta real do modelo. Não coloque chaves no notebook, README ou Git.
+
+**Amostra Olist anotada no Colab:** o runtime reportou o carregamento do dataset Kaggle Olist com 99.224 reviews e o processamento de 500 comentários via Groq, modelo `openai/gpt-oss-120b`. O CSV resultante está em [data/silver/tb_reviews_aligned_real.csv](data/silver/tb_reviews_aligned_real.csv), com 500 `review_id` únicos, scores 1–5 e as features `sentimento`, `categoria_problema`, `atraso_entrega` e `produto_danificado`. O arquivo mostrado no preview como `REV_0` e com texto Faker em inglês é o fixture sintético antigo, não esse resultado português. Como os `order_id` Olist não coincidem com os UUIDs dos pedidos locais (zero matches), e esse CSV não possui `customer_id` nem `review_created_at`, as reviews reais não são juntadas ao fato de pedidos: o builder cria a tabela Gold independente `fato_avaliacoes_olist_enriquecidas` e registra `source_type`, provedor e modelo. O Streamlit mostra distribuição de sentimento/categoria e exemplos numa seção separada. As classes são predições do modelo e não foram verificadas contra ground truth humano. A chamada ao Groq ocorreu; confirme limites/termos de uso e eventual custo da conta antes de descrever a execução como gratuita. Isso não significa que o script OpenAI acima foi executado.
+
+**Atribuição e licença da amostra:** o dataset-fonte [Brazilian E-Commerce Public Dataset by Olist](https://www.kaggle.com/datasets/olistbr/brazilian-ecommerce) está publicado sob [CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/). O CSV de Silver contém uma amostra derivada com rótulos adicionados por modelo; preserve a atribuição e as condições não comerciais/compartilhamento pela mesma licença ao redistribuir. A licença do código do repositório deve ser definida separadamente; o arquivo `LICENSE` atual está vazio.
 
 **Features de produto:** [data/silver/tb_products_enriched_sample.csv](data/silver/tb_products_enriched_sample.csv) contém cinco produtos demonstrativos com texto e features em JSON. A amostra foi montada com assistência do GitHub Copilot para demonstrar o contrato de extração, está marcada como `synthetic_demo_text` e usa IDs `demo-product-*`; os textos foram criados para a demonstração, não extraídos dos produtos Bronze, cujos títulos e descrições atuais são texto Faker sem conteúdo confiável para inferir atributos. A tabela fica separada dos fatos e da dimensão transacional. O builder a publica no DuckDB como `tb_products_enriched_sample`, e o Streamlit a exibe num bloco separado, sem afetar as métricas de vendas. `sentiment` foi omitido porque é uma feature de reviews, não um atributo intrínseco do produto. Essa demo valida o contrato tabular/JSON e sua leitura local; não deve ser descrita como extração real dos 5.000 produtos Bronze nem como execução offline. Para demonstrar extração desses produtos, será necessário substituir a amostra por descrições semanticamente utilizáveis e rastrear a origem do texto.
 
@@ -536,15 +540,15 @@ Para preparar as avaliações alinhadas, execute `python src/prepare_aligned_syn
 
 ## Item 6 — Modelagem de Dados
 
-O script [src/build_star_schema.py](src/build_star_schema.py) materializa localmente em DuckDB as dimensões `dim_tempo`, `dim_cliente`, `dim_geolocalizacao`, `dim_produto` e `dim_status_pedido`; os fatos `fato_pedidos`, `fato_itens_pedido` e `fato_avaliacoes`; e as views `vw_analitico_pedidos`, `vw_analitico_pedidos_itens` e `vw_analitico_avaliacoes`. A PoC de produtos é uma tabela separada `tb_products_enriched_sample`, não ligada às linhas de pedido nem incorporada às views transacionais.
+O script [src/build_star_schema.py](src/build_star_schema.py) materializa localmente em DuckDB as dimensões `dim_tempo`, `dim_cliente`, `dim_geolocalizacao`, `dim_produto` e `dim_status_pedido`; os fatos `fato_pedidos`, `fato_itens_pedido` e `fato_avaliacoes` (10.000 reviews sintéticas alinhadas); a amostra desconectada `fato_avaliacoes_olist_enriquecidas` (500 reviews Olist anotadas); e as views `vw_analitico_pedidos`, `vw_analitico_pedidos_itens` e `vw_analitico_avaliacoes`. A PoC de produtos é outra tabela separada, `tb_products_enriched_sample`, não ligada às linhas de pedido nem incorporada às views transacionais.
 
-A validação confirmou 100.000 pedidos, 200.000 itens e 10.000 avaliações, sem multiplicação de linhas nas views. O banco local é `data/gold/ecommerce_star.duckdb` e pode ser reproduzido executando o script após gerar os dados Silver. A geografia disponível é sintética, sem latitude/longitude; não deve ser usada como mapa real ou cálculo de rotas.
+A validação confirmou 100.000 pedidos, 200.000 itens, 10.000 reviews sintéticas alinhadas e 500 reviews Olist anotadas. As 500 reviews Olist têm IDs sem correspondência nos pedidos sintéticos e permanecem numa tabela separada, sem FK inventada. As views transacionais mantêm suas cardinalidades. O banco local é `data/gold/ecommerce_star.duckdb` e pode ser reproduzido executando o script após disponibilizar os arquivos Silver. A geografia disponível é sintética, sem latitude/longitude; não deve ser usada como mapa real ou cálculo de rotas.
 
 Com os arquivos Silver disponíveis, execute `python src/build_star_schema.py` para recriar o banco DuckDB e as views.
 
 ## Item 7 — Análise de Dados
 
-O Streamlit local contém cinco gráficos: pedidos por status, pedidos por mês, evolução da receita, receita por categoria e frete médio por categoria; além de KPIs e tabelas. Quando o DuckDB Gold existe, o app consulta as views analíticas locais e, se disponível, exibe a PoC sintética `tb_products_enriched_sample` numa seção separada. Sem o DuckDB, usa os CSVs Bronze e lê a amostra Silver opcionalmente. A PoC não participa das métricas de venda.
+O Streamlit local contém cinco gráficos transacionais: pedidos por status, pedidos por mês, evolução da receita, receita por categoria e frete médio por categoria; além de KPIs e tabelas. Também exibe a PoC sintética `tb_products_enriched_sample` separadamente e, quando presente, dois gráficos da amostra Olist anotada (sentimento e categoria do problema) com exemplos de reviews. São sete gráficos no total quando a amostra Olist está disponível. As reviews Olist não participam dos KPIs nem são cruzadas com pedidos sintéticos. Sem DuckDB, o app lê Bronze e os dois arquivos Silver opcionais.
 
 Isso atende localmente ao mínimo de cinco gráficos, mas não conclui a criação da coleção na Dadosfera, a integração do Metabase ou a publicação do Power BI. Alertas de queda diária, mapa com coordenadas IBGE e dashboard Power BI permanecem bônus pendentes.
 
@@ -576,7 +580,7 @@ A opção recomendada por custo e simplicidade é:
 
 #### Data App deste projeto
 
-O app está em [app.py](app.py). Ele apresenta filtros de período e status, indicadores, cinco gráficos e tabelas. Consulta o DuckDB Gold local quando disponível ou usa os CSVs Bronze como fallback; não consulta nem altera as tabelas da Dadosfera.
+O app está em [app.py](app.py). Ele apresenta filtros de período e status, indicadores, cinco gráficos transacionais, até dois gráficos da amostra Olist e tabelas. Consulta o DuckDB Gold local quando disponível ou usa os CSVs Bronze como fallback; não consulta nem altera as tabelas da Dadosfera. Para publicar o repositório, garanta que o deploy aceite a licença do CSV Olist derivado ou substitua-o por um processo de download/geração executado no ambiente autorizado.
 
 Para executar no Windows, a partir da raiz do repositório:
 
@@ -587,7 +591,7 @@ Para executar no Windows, a partir da raiz do repositório:
 .\.venv\Scripts\python.exe -m streamlit run app.py
 ```
 
-O Streamlit abrirá o app em `http://localhost:8501`. O [requirements.txt da raiz](requirements.txt) contém as dependências de runtime do app. Os CSVs Bronze e o banco DuckDB são ignorados pelo Git; num clone limpo ou no Streamlit Community Cloud, o app não terá dados até configurar uma fonte acessível ao deploy. Atualmente ele não consulta a Dadosfera. A geração cria IDs novos e não deve ser enviada à plataforma sem revisar os relacionamentos. A publicação em Azure não foi feita e permanece como bônus sujeito ao saldo e ao custo estimado.
+O Streamlit abrirá o app em `http://localhost:8501`. O [requirements.txt da raiz](requirements.txt) contém as dependências de runtime do app. Os CSVs Bronze e o banco DuckDB são ignorados pelo Git; num clone limpo ou no Streamlit Community Cloud, o app não terá os dados transacionais até configurar uma fonte acessível ao deploy. Atualmente ele não consulta a Dadosfera. A geração cria IDs novos e não deve ser enviada à plataforma sem revisar os relacionamentos. A publicação em Azure não foi feita e permanece como bônus sujeito ao saldo e ao custo estimado.
 
 ### 3) Dashboard local (bonus)
 
@@ -686,9 +690,11 @@ O projeto foi organizado para respeitar a regra do case: qualquer etapa que depe
 - [x] Great Expectations executado no Colab em 02/10/2026 para as três tabelas principais: 305.000 linhas, 20 checks aprovados e zero falhas; relatório e log arquivados em `data/quality/colab_evidence/`.
 - [x] Relatório pandas local e log; a execução de 01/10 tem `ALERTA` por chaves órfãs nos arquivos bônus Bronze antigos. As tabelas Silver sintéticas alinhadas passam as verificações de relacionamento.
 - [x] Star Schema DuckDB local implementado com fatos de pedidos, itens e avaliações e views analíticas; o README registra a validação de cardinalidade da execução anterior.
-- [x] Data App Streamlit local com cinco gráficos; AppTest foi registrado como aprovado anteriormente. O app lê DuckDB/CSV local, não Dadosfera.
+- [x] Data App Streamlit local com cinco gráficos transacionais e dois gráficos condicionais da amostra Olist; renderização verificada no navegador. O app lê DuckDB/CSV local, não Dadosfera.
 - [x] PoC de atributos de produtos em `data/silver/tb_products_enriched_sample.csv`: cinco registros de demonstração sintéticos, JSON validado, tabela separada no DuckDB e seção renderizada no Streamlit; não são produtos extraídos do Bronze nem entram nas métricas transacionais.
-- [x] Processador de avaliações preparado, limitado a cinco registros e com dry-run; nenhuma chamada paga foi feita.
+- [x] Amostra de 500 reviews Olist anotadas no Colab importada para Silver e Gold; IDs, domínios dos labels e contagens validados. Permanece separada dos pedidos sintéticos por incompatibilidade de IDs.
+- [x] Processamento reportado de 500 reviews via Groq no Colab com `openai/gpt-oss-120b`; custo/limites da conta ainda precisam ser confirmados.
+- [x] Processador alternativo de reviews via OpenAI preparado, limitado a cinco registros e com dry-run; nenhuma chamada OpenAI foi feita.
 
 ### Relatado, mas evidência externa não arquivada
 
@@ -699,18 +705,20 @@ O projeto foi organizado para respeitar a regra do case: qualquer etapa que depe
 - [ ] Atualizar as datas do Gantt com início/fim reais e registrar um quadro de acompanhamento ou link de projeto.
 - [ ] Finalizar tags/descrições na interface do catálogo Dadosfera e guardar prints. O catálogo JSON local não substitui essa etapa nem implementa a API bônus.
 - [ ] Executar e evidenciar a microtransformação SQL e o pipeline ETL no ambiente Dadosfera.
-- [ ] Não enviar o `data/bronze/tb_reviews.csv` antigo como se estivesse alinhado: seus IDs têm incompatibilidades documentadas no relatório local. Para reviews sintéticas alinhadas, usar `data/silver/tb_reviews_aligned_synthetic.csv` e identificá-las como sintéticas; confirmar se o avaliador exige Olist real.
+- [ ] Não enviar o `data/bronze/tb_reviews.csv` antigo como se estivesse alinhado: seus IDs têm incompatibilidades documentadas no relatório local. Manter separado o sample Olist anotado e confirmar se o avaliador quer as 500 avaliações ou o dataset completo.
+- [ ] Construir uma única view/tabelão analítico desnormalizado para consumo de BI; as views atuais expõem pedidos, itens e avaliações separadamente.
 - [ ] Criar coleção e dashboard de pelo menos cinco visualizações no Metabase/Dadosfera; os gráficos atuais são apenas do Streamlit local.
 - [ ] Disponibilizar uma fonte de dados acessível ao deploy e conectar o Data App aos dados tratados da Dadosfera antes de publicar no Streamlit Community Cloud.
+- [ ] Criar a view/tabelão desnormalizado para BI; hoje os fatos/views analíticos são separados.
 - [ ] Decidir sobre LLM real somente após confirmar preço/saldo; exige `OPENAI_API_KEY`, autorização e execução explícita. O script limita a amostra a cinco.
 - [ ] Gravar o vídeo não listado. Azure, Spark/Databricks, Power BI, mapa IBGE, áudio/Whisper e geração DALL-E/GPT são bônus ainda não implementados.
 - [ ] Revisar o Git, garantir que ambientes virtuais e dados locais não sejam incluídos, depois fazer commit/push do estado aprovado.
 
-As avaliações e localizações da camada Silver são sintéticas e ilustrativas. A evidência de GX arquivada cobre apenas pedidos, itens e produtos; ela não representa uma execução com avaliações. Nenhuma chamada paga de LLM foi executada.
+As 10.000 avaliações alinhadas e as localizações Silver continuam sintéticas; a nova amostra de 500 reviews é Olist e foi anotada via Groq no Colab. A evidência de GX arquivada cobre pedidos, itens e produtos, não reviews. O script local OpenAI não fez chamadas; a eventual cobrança/limite do processamento Groq ainda não foi confirmada.
 
 ## Diretriz final
 
-Este repositório deve ser entendido como uma implementação completa do case em caráter técnico e reproduzível, respeitando a narrativa da empresa de e-commerce e cobrindo os requisitos de engenharia de dados com profundidade sem perder a clareza. O foco principal está em demonstrar domínio real do ciclo de vida dos dados, sem depender de promessas sem evidência.
+Este repositório contém uma implementação técnica local de partes do case, com limites e dependências externas documentados. Não representa ainda a entrega ponta a ponta: ingestão/catálogo/pipeline e dashboard na Dadosfera, view única de BI, deploy conectado à plataforma, decisão de licença do repositório e vídeo continuam pendentes. O status por item acima deve ser usado como referência de conclusão.
 
 ## Referências rápidas
 

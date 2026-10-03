@@ -1,0 +1,437 @@
+{
+  "data_inicio": "2026-10-01T16:03:26.397868+00:00",
+  "data_fim": "2026-10-01T16:03:40.379124+00:00",
+  "status": "ALERTA",
+  "status_tabelas_principais": "SUCESSO",
+  "linhas_processadas": 654727,
+  "linhas_com_falha": 239727,
+  "tables": {
+    "orders": {
+      "rows": 100000,
+      "columns": [
+        "order_id",
+        "customer_id",
+        "order_status",
+        "order_purchase_timestamp",
+        "order_delivered_customer_date"
+      ],
+      "missing_counts": {
+        "order_id": 0,
+        "customer_id": 0,
+        "order_status": 0,
+        "order_purchase_timestamp": 0,
+        "order_delivered_customer_date": 18136
+      },
+      "missing_percentages": {
+        "order_id": 0.0,
+        "customer_id": 0.0,
+        "order_status": 0.0,
+        "order_purchase_timestamp": 0.0,
+        "order_delivered_customer_date": 18.14
+      }
+    },
+    "items": {
+      "rows": 200000,
+      "columns": [
+        "order_id",
+        "order_item_id",
+        "product_id",
+        "price",
+        "freight_value"
+      ],
+      "missing_counts": {
+        "order_id": 0,
+        "order_item_id": 0,
+        "product_id": 0,
+        "price": 0,
+        "freight_value": 0
+      },
+      "missing_percentages": {
+        "order_id": 0.0,
+        "order_item_id": 0.0,
+        "product_id": 0.0,
+        "price": 0.0,
+        "freight_value": 0.0
+      }
+    },
+    "products": {
+      "rows": 5000,
+      "columns": [
+        "product_id",
+        "product_category_name_raw",
+        "title_raw",
+        "description_raw"
+      ],
+      "missing_counts": {
+        "product_id": 0,
+        "product_category_name_raw": 0,
+        "title_raw": 0,
+        "description_raw": 0
+      },
+      "missing_percentages": {
+        "product_id": 0.0,
+        "product_category_name_raw": 0.0,
+        "title_raw": 0.0,
+        "description_raw": 0.0
+      }
+    },
+    "customers": {
+      "rows": 100000,
+      "columns": [
+        "customer_id",
+        "customer_state",
+        "customer_city",
+        "customer_segment",
+        "customer_channel"
+      ],
+      "missing_counts": {
+        "customer_id": 0,
+        "customer_state": 0,
+        "customer_city": 0,
+        "customer_segment": 0,
+        "customer_channel": 0
+      },
+      "missing_percentages": {
+        "customer_id": 0.0,
+        "customer_state": 0.0,
+        "customer_city": 0.0,
+        "customer_segment": 0.0,
+        "customer_channel": 0.0
+      }
+    },
+    "payments": {
+      "rows": 100000,
+      "columns": [
+        "payment_id",
+        "order_id",
+        "payment_type",
+        "payment_value",
+        "payment_status"
+      ],
+      "missing_counts": {
+        "payment_id": 0,
+        "order_id": 0,
+        "payment_type": 0,
+        "payment_value": 0,
+        "payment_status": 0
+      },
+      "missing_percentages": {
+        "payment_id": 0.0,
+        "order_id": 0.0,
+        "payment_type": 0.0,
+        "payment_value": 0.0,
+        "payment_status": 0.0
+      }
+    },
+    "reviews": {
+      "rows": 39727,
+      "columns": [
+        "order_id",
+        "customer_id",
+        "review_score",
+        "review_text",
+        "review_created_at"
+      ],
+      "missing_counts": {
+        "order_id": 0,
+        "customer_id": 0,
+        "review_score": 0,
+        "review_text": 0,
+        "review_created_at": 0
+      },
+      "missing_percentages": {
+        "order_id": 0.0,
+        "customer_id": 0.0,
+        "review_score": 0.0,
+        "review_text": 0.0,
+        "review_created_at": 0.0
+      }
+    },
+    "customers_aligned": {
+      "rows": 100000,
+      "columns": [
+        "customer_id",
+        "customer_state",
+        "customer_city",
+        "source_type"
+      ],
+      "missing_counts": {
+        "customer_id": 0,
+        "customer_state": 0,
+        "customer_city": 0,
+        "source_type": 0
+      },
+      "missing_percentages": {
+        "customer_id": 0.0,
+        "customer_state": 0.0,
+        "customer_city": 0.0,
+        "source_type": 0.0
+      }
+    },
+    "reviews_aligned": {
+      "rows": 10000,
+      "columns": [
+        "review_id",
+        "order_id",
+        "customer_id",
+        "review_score",
+        "review_text",
+        "review_created_at",
+        "source_type"
+      ],
+      "missing_counts": {
+        "review_id": 0,
+        "order_id": 0,
+        "customer_id": 0,
+        "review_score": 0,
+        "review_text": 0,
+        "review_created_at": 0,
+        "source_type": 0
+      },
+      "missing_percentages": {
+        "review_id": 0.0,
+        "order_id": 0.0,
+        "customer_id": 0.0,
+        "review_score": 0.0,
+        "review_text": 0.0,
+        "review_created_at": 0.0,
+        "source_type": 0.0
+      }
+    }
+  },
+  "checks": [
+    {
+      "table": "orders",
+      "rule": "order_id_not_null",
+      "severity": "error",
+      "status": "PASS",
+      "failed_rows": 0,
+      "expectation": "order_id não nulo."
+    },
+    {
+      "table": "orders",
+      "rule": "order_id_unique",
+      "severity": "error",
+      "status": "PASS",
+      "failed_rows": 0,
+      "expectation": "order_id único."
+    },
+    {
+      "table": "orders",
+      "rule": "customer_id_not_null",
+      "severity": "error",
+      "status": "PASS",
+      "failed_rows": 0,
+      "expectation": "customer_id não nulo."
+    },
+    {
+      "table": "orders",
+      "rule": "purchase_timestamp_not_null",
+      "severity": "error",
+      "status": "PASS",
+      "failed_rows": 0,
+      "expectation": "Data de compra válida e preenchida."
+    },
+    {
+      "table": "orders",
+      "rule": "status_in_allowed_domain",
+      "severity": "error",
+      "status": "PASS",
+      "failed_rows": 0,
+      "expectation": "Status em ['canceled', 'delivered', 'processing', 'shipped']."
+    },
+    {
+      "table": "orders",
+      "rule": "delivered_date_required_for_delivered_orders",
+      "severity": "error",
+      "status": "PASS",
+      "failed_rows": 0,
+      "expectation": "Pedidos delivered possuem data de entrega."
+    },
+    {
+      "table": "items",
+      "rule": "order_id_not_null",
+      "severity": "error",
+      "status": "PASS",
+      "failed_rows": 0,
+      "expectation": "order_id não nulo."
+    },
+    {
+      "table": "items",
+      "rule": "order_id_references_orders.order_id",
+      "severity": "error",
+      "status": "PASS",
+      "failed_rows": 0,
+      "expectation": "Todos os valores de order_id existem em orders.order_id."
+    },
+    {
+      "table": "items",
+      "rule": "product_id_references_products.product_id",
+      "severity": "error",
+      "status": "PASS",
+      "failed_rows": 0,
+      "expectation": "Todos os valores de product_id existem em products.product_id."
+    },
+    {
+      "table": "items",
+      "rule": "price_numeric_and_nonnegative",
+      "severity": "error",
+      "status": "PASS",
+      "failed_rows": 0,
+      "expectation": "price numérico e maior ou igual a zero."
+    },
+    {
+      "table": "items",
+      "rule": "freight_value_numeric_and_nonnegative",
+      "severity": "error",
+      "status": "PASS",
+      "failed_rows": 0,
+      "expectation": "freight_value numérico e maior ou igual a zero."
+    },
+    {
+      "table": "products",
+      "rule": "product_id_unique",
+      "severity": "error",
+      "status": "PASS",
+      "failed_rows": 0,
+      "expectation": "product_id único."
+    },
+    {
+      "table": "products",
+      "rule": "product_category_name_raw_not_empty",
+      "severity": "error",
+      "status": "PASS",
+      "failed_rows": 0,
+      "expectation": "product_category_name_raw preenchido."
+    },
+    {
+      "table": "products",
+      "rule": "title_raw_not_empty",
+      "severity": "error",
+      "status": "PASS",
+      "failed_rows": 0,
+      "expectation": "title_raw preenchido."
+    },
+    {
+      "table": "products",
+      "rule": "description_raw_not_empty",
+      "severity": "error",
+      "status": "PASS",
+      "failed_rows": 0,
+      "expectation": "description_raw preenchido."
+    },
+    {
+      "table": "customers",
+      "rule": "customer_id_unique",
+      "severity": "warning",
+      "status": "PASS",
+      "failed_rows": 0,
+      "expectation": "customer_id único."
+    },
+    {
+      "table": "customers",
+      "rule": "customer_id_references_orders.customer_id",
+      "severity": "warning",
+      "status": "FAIL",
+      "failed_rows": 100000,
+      "expectation": "Todos os valores de customer_id existem em orders.customer_id."
+    },
+    {
+      "table": "payments",
+      "rule": "order_id_references_orders.order_id",
+      "severity": "warning",
+      "status": "FAIL",
+      "failed_rows": 100000,
+      "expectation": "Todos os valores de order_id existem em orders.order_id."
+    },
+    {
+      "table": "reviews",
+      "rule": "order_id_references_orders.order_id",
+      "severity": "warning",
+      "status": "FAIL",
+      "failed_rows": 39727,
+      "expectation": "Todos os valores de order_id existem em orders.order_id."
+    },
+    {
+      "table": "reviews",
+      "rule": "customer_id_references_orders.customer_id",
+      "severity": "warning",
+      "status": "FAIL",
+      "failed_rows": 39727,
+      "expectation": "Todos os valores de customer_id existem em orders.customer_id."
+    },
+    {
+      "table": "reviews",
+      "rule": "review_score_between_1_and_5",
+      "severity": "warning",
+      "status": "PASS",
+      "failed_rows": 0,
+      "expectation": "review_score entre 1 e 5."
+    },
+    {
+      "table": "reviews",
+      "rule": "review_text_not_empty",
+      "severity": "warning",
+      "status": "PASS",
+      "failed_rows": 0,
+      "expectation": "review_text preenchido."
+    },
+    {
+      "table": "customers_aligned",
+      "rule": "customer_id_unique",
+      "severity": "error",
+      "status": "PASS",
+      "failed_rows": 0,
+      "expectation": "customer_id único."
+    },
+    {
+      "table": "customers_aligned",
+      "rule": "customer_id_references_orders.customer_id",
+      "severity": "error",
+      "status": "PASS",
+      "failed_rows": 0,
+      "expectation": "Todos os valores de customer_id existem em orders.customer_id."
+    },
+    {
+      "table": "reviews_aligned",
+      "rule": "review_id_unique",
+      "severity": "error",
+      "status": "PASS",
+      "failed_rows": 0,
+      "expectation": "review_id único."
+    },
+    {
+      "table": "reviews_aligned",
+      "rule": "order_id_references_orders.order_id",
+      "severity": "error",
+      "status": "PASS",
+      "failed_rows": 0,
+      "expectation": "Todos os valores de order_id existem em orders.order_id."
+    },
+    {
+      "table": "reviews_aligned",
+      "rule": "customer_id_references_orders.customer_id",
+      "severity": "error",
+      "status": "PASS",
+      "failed_rows": 0,
+      "expectation": "Todos os valores de customer_id existem em orders.customer_id."
+    },
+    {
+      "table": "reviews_aligned",
+      "rule": "review_score_between_1_and_5",
+      "severity": "error",
+      "status": "PASS",
+      "failed_rows": 0,
+      "expectation": "review_score entre 1 e 5."
+    },
+    {
+      "table": "reviews_aligned",
+      "rule": "review_text_not_empty",
+      "severity": "error",
+      "status": "PASS",
+      "failed_rows": 0,
+      "expectation": "review_text preenchido."
+    }
+  ],
+  "optional_files_missing": {}
+}

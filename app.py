@@ -79,7 +79,7 @@ st.markdown(
 
 
 @st.cache_data(show_spinner="Carregando os dados do projeto...")
-def load_data() -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+def load_data() -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     if STAR_SCHEMA_PATH.exists():
         import duckdb
 
@@ -124,9 +124,29 @@ def load_data() -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]
                 if demo_table_exists
                 else pd.DataFrame()
             )
+            real_review_table_exists = connection.execute(
+                """
+                SELECT COUNT(*) > 0
+                FROM information_schema.tables
+                WHERE table_name = 'fato_avaliacoes_olist_enriquecidas'
+                """
+            ).fetchone()[0]
+            olist_reviews = (
+                connection.execute(
+                    """
+                    SELECT review_id, order_id, review_score, review_text, sentimento,
+                           categoria_problema, atraso_entrega, produto_danificado,
+                           source_type, enrichment_provider, enrichment_model
+                    FROM fato_avaliacoes_olist_enriquecidas
+                    ORDER BY review_id
+                    """
+                ).df()
+                if real_review_table_exists
+                else pd.DataFrame()
+            )
         orders["order_purchase_timestamp"] = pd.to_datetime(orders["order_purchase_timestamp"])
         orders["order_status"] = orders["order_status"].fillna("sem status").str.strip().str.lower()
-        return orders, items, products, product_feature_sample
+        return orders, items, products, product_feature_sample, olist_reviews
 
     missing_files = [name for name in REQUIRED_FILES if not (BRONZE / name).exists()]
     if missing_files:
@@ -154,7 +174,9 @@ def load_data() -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]
     product_feature_sample = (
         pd.read_csv(product_feature_path) if product_feature_path.exists() else pd.DataFrame()
     )
-    return orders, items, products, product_feature_sample
+    real_review_path = SILVER / "tb_reviews_aligned_real.csv"
+    olist_reviews = pd.read_csv(real_review_path) if real_review_path.exists() else pd.DataFrame()
+    return orders, items, products, product_feature_sample, olist_reviews
 
 
 def format_brl(value: float) -> str:
@@ -175,7 +197,7 @@ def render_kpi(column, label: str, value: str, detail: str, color: str) -> None:
 
 
 try:
-    orders_df, items_df, products_df, product_feature_sample_df = load_data()
+    orders_df, items_df, products_df, product_feature_sample_df, olist_reviews_df = load_data()
 except (FileNotFoundError, ValueError, KeyError) as error:
     st.error(f"Não foi possível carregar os dados: {error}")
     st.info("Confira se os três CSVs estão em data/bronze e se mantêm os cabeçalhos esperados.")
@@ -440,6 +462,47 @@ else:
         product_feature_sample_df[
             ["title_raw", "category_extracted", "material_extracted", "key_features_json"]
         ],
+        hide_index=True,
+        width="stretch",
+    )
+
+st.subheader("Reviews Olist enriquecidas")
+st.caption(
+    "Amostra classificada no Colab com Groq; os order_id Olist não correspondem aos pedidos sintéticos locais e não são usados nos KPIs de vendas."
+)
+if olist_reviews_df.empty:
+    st.info("A amostra Olist não está disponível no Silver/Gold local.")
+else:
+    sentiment_column, issue_column = st.columns(2)
+    with sentiment_column:
+        st.plotly_chart(
+            px.bar(
+                olist_reviews_df["sentimento"].value_counts().rename_axis("Sentimento").reset_index(name="Reviews"),
+                x="Sentimento",
+                y="Reviews",
+                color="Sentimento",
+                color_discrete_map={"Positivo": "#368263", "Neutro": "#d49a21", "Negativo": "#d7664c"},
+                template="plotly_white",
+                title="Sentimento na amostra Olist",
+            ),
+            width="stretch",
+        )
+    with issue_column:
+        st.plotly_chart(
+            px.bar(
+                olist_reviews_df["categoria_problema"].value_counts().rename_axis("Categoria").reset_index(name="Reviews"),
+                x="Categoria",
+                y="Reviews",
+                color_discrete_sequence=["#24669a"],
+                template="plotly_white",
+                title="Categoria do problema na amostra Olist",
+            ),
+            width="stretch",
+        )
+    st.dataframe(
+        olist_reviews_df[
+            ["review_score", "review_text", "sentimento", "categoria_problema", "atraso_entrega", "produto_danificado"]
+        ].head(20),
         hide_index=True,
         width="stretch",
     )

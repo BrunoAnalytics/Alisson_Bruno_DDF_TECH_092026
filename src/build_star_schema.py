@@ -26,6 +26,7 @@ def load_sources() -> tuple[pd.DataFrame, ...]:
         parse_dates=["review_created_at"],
     )
     product_feature_sample = pd.read_csv(SILVER / "tb_products_enriched_sample.csv")
+    olist_review_sample = pd.read_csv(SILVER / "tb_reviews_aligned_real.csv")
 
     if not orders["order_id"].is_unique:
         raise ValueError("orders.order_id não é único.")
@@ -44,6 +45,22 @@ def load_sources() -> tuple[pd.DataFrame, ...]:
     parsed_features = product_feature_sample["key_features_json"].map(json.loads)
     if not parsed_features.map(lambda value: isinstance(value, dict)).all():
         raise ValueError("key_features_json deve conter objetos JSON.")
+    if not olist_review_sample["review_id"].is_unique:
+        raise ValueError("review_id precisa ser único na amostra Olist enriquecida.")
+    if not pd.to_numeric(olist_review_sample["review_score"], errors="coerce").between(1, 5).all():
+        raise ValueError("review_score deve estar entre 1 e 5 na amostra Olist.")
+    if not olist_review_sample["sentimento"].isin({"Positivo", "Neutro", "Negativo"}).all():
+        raise ValueError("sentimento fora do domínio permitido na amostra Olist.")
+    if not olist_review_sample["categoria_problema"].isin(
+        {"Outro", "Logística", "Produto", "Atendimento", "Pagamento"}
+    ).all():
+        raise ValueError("categoria_problema fora do domínio permitido na amostra Olist.")
+    if not olist_review_sample["atraso_entrega"].isin({"Sim", "Não"}).all():
+        raise ValueError("atraso_entrega deve usar Sim ou Não na amostra Olist.")
+    if not olist_review_sample["produto_danificado"].isin({"Sim", "Não"}).all():
+        raise ValueError("produto_danificado deve usar Sim ou Não na amostra Olist.")
+    if olist_review_sample["review_text"].fillna("").str.strip().eq("").any():
+        raise ValueError("review_text não pode estar vazio na amostra Olist.")
 
     items["price"] = pd.to_numeric(items["price"], errors="raise")
     items["freight_value"] = pd.to_numeric(items["freight_value"], errors="raise")
@@ -53,7 +70,7 @@ def load_sources() -> tuple[pd.DataFrame, ...]:
     products["title_raw"] = products["title_raw"].fillna("").str.strip()
     products["description_raw"] = products["description_raw"].fillna("").str.strip()
     customers["geography_key"] = customers["customer_state"] + "|" + customers["customer_city"]
-    return orders, items, products, customers, reviews, product_feature_sample
+    return orders, items, products, customers, reviews, product_feature_sample, olist_review_sample
 
 
 def build_time_dimension(*date_series: pd.Series) -> pd.DataFrame:
@@ -74,7 +91,7 @@ def build_time_dimension(*date_series: pd.Series) -> pd.DataFrame:
 
 
 def build_model() -> None:
-    orders, items, products, customers, reviews, product_feature_sample = load_sources()
+    orders, items, products, customers, reviews, product_feature_sample, olist_review_sample = load_sources()
     time_dimension = build_time_dimension(
         orders["order_purchase_timestamp"],
         orders["order_delivered_customer_date"],
@@ -118,6 +135,7 @@ def build_model() -> None:
             "_items": items,
             "_reviews": reviews,
             "_product_feature_sample": product_feature_sample,
+            "_olist_review_sample": olist_review_sample,
             "_time_dimension": time_dimension,
             "_geography_dimension": geography_dimension,
             "_customer_dimension": customer_dimension,
@@ -144,6 +162,24 @@ def build_model() -> None:
                 source_type,
                 extraction_method
             FROM _product_feature_sample
+            """
+        )
+        connection.execute(
+            """
+            CREATE OR REPLACE TABLE fato_avaliacoes_olist_enriquecidas AS
+            SELECT
+                review_id,
+                order_id,
+                review_score::INTEGER AS review_score,
+                review_text,
+                sentimento,
+                categoria_problema,
+                atraso_entrega,
+                produto_danificado,
+                'olist_kaggle_sample' AS source_type,
+                'Groq' AS enrichment_provider,
+                'openai/gpt-oss-120b' AS enrichment_model
+            FROM _olist_review_sample
             """
         )
 
@@ -279,6 +315,7 @@ def build_model() -> None:
             "fato_itens_pedido": len(items),
             "fato_avaliacoes": len(reviews),
             "tb_products_enriched_sample": len(product_feature_sample),
+            "fato_avaliacoes_olist_enriquecidas": len(olist_review_sample),
             "vw_analitico_pedidos": len(orders),
             "vw_analitico_pedidos_itens": len(items),
             "vw_analitico_avaliacoes": len(reviews),
